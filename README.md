@@ -11,6 +11,7 @@
 | `02_model_compare.py` | Self-Practice Q2 — 6종 모델 비교 |
 | `03_predict.py` | Practice #3 — 신규 고객 스코어링 |
 | `04_prompt_strict.py` | 날짜 컬럼 처리 방식별 성능 확인 |
+| `05_verify_model.py` | pkl 이 보고한 성능표를 낸 모델이 맞는지 검증 |
 | `outputs/` | 리포트·성능표·스코어 CSV |
 
 `bank_churn_model.pkl` 은 10MB라 저장소에서 뺌. `01_train_rf.py` 돌리면 다시 생김.
@@ -107,6 +108,28 @@ Pipeline. 원본 CSV 를 그대로 넣으면 예측이 나옴.
 
 `cloudpickle.register_pickle_by_value` 로 `churn_features` 모듈을 값으로 직렬화함. pkl 만 다른
 경로로 옮겨도 `churn_features.py` 없이 로드되는 것 확인함.
+
+## pkl 이 최종본이 맞는지 — 검증 (`05_verify_model.py`)
+
+LLM 채팅으로만 모델을 만들면 val / test 로 어떤 행이 갔는지 알 수 없고, 받은 pkl 이 보고된 성능표를
+낸 모델인지 확인할 방법이 없음. 실습 자료 6쪽도 "저장 모델과 학습 모델과의 동일성 여부는 보장 안됨"
+이라고 적고 있음. 세션이 닫히면 재현도 못 함.
+
+코드로 내리면 확인 가능한 문제라고 봄. 검증한 것 넷:
+
+| 확인 | 결과 |
+| --- | --- |
+| 분할 재현 | `train_test_split(random_state=42)` 로 Train 1260 / Val 420 / Test 420 동일 재현. 행 목록을 `outputs/05_split_assignment.csv` 에 CustomerId 단위로 남김 |
+| 성능표 재계산 | pkl 을 불러 세 set 을 다시 채점 → 보고표와 소수 4자리까지 일치 |
+| 재학습 일치 | 같은 코드·같은 seed 로 다시 학습한 모델과 pkl 의 예측 확률이 완전 일치 |
+| 지문 | SHA-256 `443cc458…6a64a2` |
+
+셋째가 핵심. 재학습본과 pkl 의 예측이 같으면 그 pkl 은 이 코드가 seed 42 로 만든 모델. 채팅 세션에서
+받은 pkl 에는 이게 없음. 안에 들어 있는 하이퍼파라미터나 피처 수는 볼 수 있어도, 어떤 행으로 학습했는지는
+객체 어디에도 기록되지 않음.
+
+남는 한계도 있음. 검증이 성립하는 건 분할 코드와 seed 를 내가 갖고 있어서임. 학습 데이터 자체가
+바뀌면 같은 seed 라도 다른 모델이 나옴. 재현의 단위는 pkl 이 아니라 데이터 + 코드 + seed 셋이라고 봄.
 
 ## Practice #3 — 신규 고객 스코어링
 
