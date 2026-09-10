@@ -1,0 +1,10 @@
+# 강의 원본 자료 — 구글 드라이브 보관
+*.pdf
+*.pptx
+
+# 학습 산출물 — 01_train_rf.py 로 재생성
+bank_churn_model.pkl
+
+__pycache__/
+.venv/
+.DS_Store
